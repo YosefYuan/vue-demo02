@@ -31,9 +31,10 @@ export default {
     },
     methods: {
         chooseSelection(index) {
-            this.nowIndex = index
             this.isDrop = false
-            this.$emit('on-change', this.nowIndex)
+            if (this.nowIndex === index) return
+            this.nowIndex = index
+            this.$emit('on-change', this.selections[this.nowIndex])
         }
     }
 }

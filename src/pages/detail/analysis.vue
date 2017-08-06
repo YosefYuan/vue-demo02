@@ -10,7 +10,7 @@
                   购买数量：
               </div>
               <div class="sales-board-line-right">
-                
+                <v-counter @on-change="onParChange('buyNum', $event)"></v-counter>
               </div>
           </div>
           <div class="sales-board-line">
@@ -18,7 +18,7 @@
                   产品类型：
               </div>
               <div class="sales-board-line-right">
-                  <v-selection :selections="buyTypes"></v-selection>
+                  <v-selection :selections="buyTypes" @on-change="onParChange('buyType', $event)"></v-selection>
               </div>
           </div>
           <div class="sales-board-line">
@@ -26,7 +26,7 @@
                   有效时间：
               </div>
               <div class="sales-board-line-right">
-                 
+                 <v-chooser :selections="periodList" @on-change="onParChange('period', $event)"></v-chooser>
               </div>
           </div>
           <div class="sales-board-line">
@@ -34,7 +34,7 @@
                   产品版本：
               </div>
               <div class="sales-board-line-right">
-                  
+                  <v-mul-chooser :selections="versionList" @on-change="onParChange('versions', $event)"></v-mul-chooser>
               </div>
           </div>
           <div class="sales-board-line">
@@ -42,7 +42,7 @@
                   总价：
               </div>
               <div class="sales-board-line-right">
-                 
+                 {{ price }}元
               </div>
           </div>
           <div class="sales-board-line">
@@ -109,20 +109,20 @@
 </template>
 
 <script>
-import VSelection from '../../components/selection'
-// import VCounter from '../../components/base/counter'
-// import VChooser from '../../components/base/chooser'
-// import VMulChooser from '../../components/base/multiplyChooser'
+import VSelection from '../../components/base/selection'
+import VCounter from '../../components/base/counter'
+import VChooser from '../../components/base/chooser'
+import VMulChooser from '../../components/base/multiplyChooser'
 // import Dialog from '../../components/base/dialog'
 // import BankChooser from '../../components/bankChooser'
 // import CheckOrder from '../../components/checkOrder'
 // import _ from 'lodash'
 export default {
   components: {
-    VSelection
-//     VCounter,
-//     VChooser,
-//     VMulChooser,
+    VSelection,
+    VCounter,
+    VChooser,
+    VMulChooser
 //     MyDialog: Dialog,
 //     BankChooser,
 //     CheckOrder
@@ -182,28 +182,30 @@ export default {
       isShowCheckOrder: false,
       isShowErrDialog: false
     }
-  }
-//   ,
-//   methods: {
-//     onParamChange (attr, val) {
-//       this[attr] = val
-//       this.getPrice()
-//     },
-//     getPrice () {
-//       let buyVersionsArray = _.map(this.versions, (item) => {
-//         return item.value
-//       })
-//       let reqParams = {
-//         buyNumber: this.buyNum,
-//         buyType: this.buyType.value,
-//         period: this.period.value,
-//         version: buyVersionsArray.join(',')
-//       }
-//       this.$http.post('/api/getPrice', reqParams)
-//       .then((res) => {
-//         this.price = res.data.amount
-//       })
-//     },
+  },
+  methods: {
+    onParChange (attr, val) {
+      this[attr] = val,
+      this.getPrice()
+    },
+    getPrice () {
+      let buyVersionsArray = this.versions.map((item) => {
+        return item.value
+      })
+      let reqParams = {
+        buyNumber: this.buyNum,
+        buyType: this.buyType.value,
+        period: this.period.value,
+        version: buyVersionsArray.join(',')
+      }
+      this.axios.post('/api/getPrice', reqParams)
+      .then((res) => {
+        this.price = res.data.amount
+      })
+      .catch((err) => {
+        console.log(err)
+      })
+    }
 //     showPayDialog () {
 //       this.isShowPayDialog = true
 //     },
@@ -240,14 +242,14 @@ export default {
 //         this.isShowErrDialog = true
 //       })
 //     }
-//   },
-//   mounted () {
-//     this.buyNum = 1
-//     this.buyType = this.buyTypes[0]
-//     this.versions = [this.versionList[0]]
-//     this.period = this.periodList[0]
-//     this.getPrice()
-//   }
+  },
+  mounted () {
+    this.buyNum = 1
+    this.buyType = this.buyTypes[0]
+    this.versions = [this.versionList[0]]
+    this.period = this.periodList[0]
+    this.getPrice()
+  }
 }
 </script>
 

@@ -7,7 +7,7 @@
           <!-- <li v-for="item in products">
                 {{ item.name }}
               </li> -->
-          <router-link v-for="item in products" :to="{ path: item.path }" tag="li" active-class="active">{{ item.name }}</router-link>
+          <router-link :key="index" v-for="(item, index) in products" :to="{ path: item.path }" tag="li" active-class="active">{{ item.name }}</router-link>
         </ul>
       </div>
     </div>
