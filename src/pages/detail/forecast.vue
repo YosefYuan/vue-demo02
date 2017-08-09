@@ -40,7 +40,7 @@
             <div class="sales-board-line">
                 <div class="sales-board-line-left">&nbsp;</div>
                 <div class="sales-board-line-right">
-                    <div class="button">
+                    <div class="button" @click="isShowPayDialog=true">
                         立即购买
                     </div>
                 </div>
@@ -51,22 +51,57 @@
             <p>2020年的一天，在你驱车前往公司的路上，导航系统通过预测交通流量，会自动帮你选择一条最合适的交通路线；车内推荐系统会根据你的饮食习惯预测你可能会喜欢吃什么，并推荐沿途的早餐店；你的电子社交助理已经为你自动选择了你可能感兴趣的社交网信息；当车内系统预测到你驾车有些分心时，座椅会自动震动进行提醒…… 以上这些情景不是科幻大片独有的，它们有的已经或会在未来的某一天成为现实。而这一切所倚靠的就是预测分析技术。 大数据时代下，作为其核心，预测分析已在商业和社会中得到广泛应用。随着越来越多的数据被记录和整理，未来预测分析必定会成为所有领域的关键技术。 作为预测分析领域的专家，埃里克·西格尔博士深谙预测分析界已经实现和正在发生的事情、面临的问题和将来可能的前景。在《大数据预测》一书中，他结合预测分析的应用实例，对其进行了深入、细致且全面的解读。 关于预测分析，你想了解的全部，你的生活以及这个世界会因为预测分析改变到什么程度，《大数据预测》都会告诉你。
             </p>
         </div>
+        <my-dialog :is-show="isShowPayDialog">
+            <table class="buy-dialog-table">
+                <tr>
+                    <th>购买数量</th>
+                    <th>媒介类型</th>
+                    <th>有效时间</th>
+                    <th>总价</th>
+                </tr>
+                <tr>
+                     <td>{{ buyNum }}</td>
+                    <td>{{ versionValue }}</td>
+                    <td>一年</td>
+                    <td>{{ price }}</td> 
+                </tr>
+            </table>
+            <bank-chooser
+            @on-change="getBankId"></bank-chooser>
+            <div class="button buy-dialog-btn" @click="confirmBy">
+                确认购买
+            </div>
+        </my-dialog>
+        <check-order 
+        :is-show-check-dialog="isShowCheckDialog"
+        :order-id="orderId"
+        @on-close-check-dialog="hideShowCheckDialog"></check-order>
     </div>
 </template>
 
 <script>
 import VCounter from '../../components/base/counter'
 import VMulChooser from '../../components/base/multiplyChooser'
+import myDialog from '../../components/base/dialog'
+import bankChooser from '../../components/bankChooser'
+import checkOrder from '../../components/checkOrder'
 export default {
     components: {
         VCounter,
-        VMulChooser
+        VMulChooser,
+        myDialog,
+        bankChooser,
+        checkOrder
     },
     data() {
         return {
+            isShowCheckDialog:false,
+            bankId: null,
+            orderId: null,
             price: 0,
             buyNum: 20,
             version: [],
+            isShowPayDialog: false,
             versionList: [
                 {
                     label: '纸质报告',
@@ -87,17 +122,49 @@ export default {
             ]
         }
     },
+    computed: {
+        versionValue () {
+            let version = this.version.map((item) => {
+                return item.label
+            })
+            return version.join(' , ')
+        }
+    },
     methods: {
+        confirmBy () {
+            let versionValues = this.version.map((val, ind) => {
+                return this.version[ind].value
+            })
+            let reqParams = {
+                buyNum: this.buyNum,
+                versionValues: versionValues.join(','),
+                bankId: this.bankId
+            }
+            this.axios.post('/api/createOrder', reqParams)
+                .then((res) => {
+                    this.orderId = res.data.orderId
+                    this.isShowPayDialog = false
+                    this.isShowCheckDialog = true
+                })
+                .catch((err) => {
+                    console.log(err)
+                })
+        },
+        hideShowCheckDialog () {
+            this.isShowCheckDialog = false
+        },
+        getBankId (bankObj) {
+            this.bankId = bankObj.id
+        },
         onParChange(attr, val) {
-            console.log(val)
             this[attr] = val
             this.getPrice()
         },
         getPrice() {
-            var version = this.version.map((val, ind) => {
+            let version = this.version.map((val, ind) => {
                 return this.version[ind].value
             })
-            var reqParams = {
+            let reqParams = {
                 buyNum: this.buyNum,
                 version: version.join(',')
             }
@@ -111,7 +178,7 @@ export default {
         }
     },
     mounted () {
-        console.log('go')
+        this.version.push(this.versionList[0])
         this.getPrice()
     }
 }
@@ -119,5 +186,30 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
+.buy-dialog-title {
+    font-size: 16px;
+    font-weight: bold;
+}
 
+.buy-dialog-btn {
+    margin-top: 20px;
+}
+
+.buy-dialog-table {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.buy-dialog-table td,
+.buy-dialog-table th {
+    border: 1px solid #e3e3e3;
+    text-align: center;
+    padding: 5px 0;
+}
+
+.buy-dialog-table th {
+    background: #4fc08d;
+    color: #fff;
+    border: 1px solid #4fc08d;
+}
 </style>

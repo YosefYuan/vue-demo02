@@ -40,7 +40,7 @@
             <div class="sales-board-line">
                 <div class="sales-board-line-left">&nbsp;</div>
                 <div class="sales-board-line-right">
-                    <div class="button">
+                    <div class="button" @click="isShowPayDialog=true">
                         立即购买
                     </div>
                 </div>
@@ -240,19 +240,55 @@
                 </tbody>
             </table>
         </div>
+        <this-dialog :is-show="isShowPayDialog" @on-close="hidePayDialog">
+            <table class="buy-dialog-table">
+                <tr>
+                    <th>产品类型</th>
+                    <th>使用地区</th>
+                    <th>有效时间</th>
+                    <th>总价</th>
+                </tr>
+                <tr>
+                    <td>{{ buyType.label }}</td>
+                    <td>{{ district.label }}</td>
+                    <td>半年</td>
+                    <td>{{ price }}</td>
+                </tr>
+            </table>
+            <h3 class="buy-dialog-title">请选择银行</h3>
+            <bank-chooser @on-change="selectBank"></bank-chooser>
+            <div class="button buy-dialog-btn" @click="confirmBy">
+                确认购买
+            </div>
+        </this-dialog>
+        <my-dialog :is-show="isShowErrDialog" @on-close="hideErrDialog">
+            支付失败！
+        </my-dialog>
+        <check-order :is-show-check-dialog="isShowCheckOrder" @on-close-check-dialog="hideCheckOrder" :order-id="orderId"></check-order>
     </div>
 </template>
 
 <script>
 import VSelection from '../../components/base/selection'
 import VChooser from '../../components/base/chooser'
+import thisDialog from '../../components/base/dialog'
+import bankChooser from '../../components/bankChooser'
+import checkOrder from '../../components/checkOrder'
 export default {
     components: {
         VChooser,
-        VSelection
+        VSelection,
+        thisDialog,
+        bankChooser,
+        checkOrder
     },
     data() {
         return {
+            isShowCheckOrder:false,
+            isShowErrDialog: false,
+            isShowPayDialog: false,
+            bankId: null,
+            orderId: null,
             price: 0,
             buyType: {},
             district: {},
@@ -294,14 +330,42 @@ export default {
                 {
                     label: '重庆',
                     value: 5
-                },
+                }
             ]
         }
     },
     methods: {
+        hideCheckOrder () {
+            this.isShowCheckOrder = false
+        },
+        hideErrDialog () {
+            this.isShowErrDialog = false
+        },
+        selectBank(bankObj) {
+            this.bankId = bankObj.id
+        },
+        confirmBy() {
+            this.isShowPayDialog = false
+            let reqParams = {
+                buyType: this.buyType.value,
+                district: this.district.value,
+                bankId: this.bankId
+            }
+            this.axios.post('/api/createOrder', reqParams)
+                .then((res) => {
+                    this.orderId = res.data.orderId
+                    this.isShowCheckOrder = true
+                })
+                .catch((err) => {
+                    console.log(err)
+                })
+        },
+        hidePayDialog() {
+            this.isShowPayDialog = false
+        },
         onParChange(attr, val) {
             this[attr] = val,
-            this.getPrice()
+                this.getPrice()
         },
         getPrice() {
             let reqParams = {
@@ -327,5 +391,30 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
+.buy-dialog-title {
+    font-size: 16px;
+    font-weight: bold;
+}
 
+.buy-dialog-btn {
+    margin-top: 20px;
+}
+
+.buy-dialog-table {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.buy-dialog-table td,
+.buy-dialog-table th {
+    border: 1px solid #e3e3e3;
+    text-align: center;
+    padding: 5px 0;
+}
+
+.buy-dialog-table th {
+    background: #4fc08d;
+    color: #fff;
+    border: 1px solid #4fc08d;
+}
 </style>

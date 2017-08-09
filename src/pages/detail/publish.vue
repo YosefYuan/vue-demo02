@@ -48,7 +48,7 @@
             <div class="sales-board-line">
                 <div class="sales-board-line-left">&nbsp;</div>
                 <div class="sales-board-line-right">
-                    <div class="button">
+                    <div class="button" @click="isShowPayDialog=true">
                         立即购买
                     </div>
                 </div>
@@ -248,6 +248,31 @@
                 </tbody>
             </table>
         </div>
+        <my-dialog :is-show="isShowPayDialog">
+            <table class="buy-dialog-table">
+                <tr>
+                    <th>购买数量</th>
+                    <th>行业</th>
+                    <th>产品版本</th>
+                    <th>总价</th>
+                </tr>
+                <tr>
+                    <td>{{ buyNum }}</td>
+                    <td>{{ tradeVersion.label }}</td>
+                    <td>{{ versionLabels }}</td>
+                    <td>{{ price }}</td>
+                </tr>
+            </table>
+            <bank-chooser
+            @on-change="getBankId"></bank-chooser>
+            <div class="button buy-dialog-btn" @click="confirmBy">
+                确认购买
+            </div>
+        </my-dialog>
+        <check-order 
+        :is-show-check-dialog="isShowCheckDialog"
+        :order-id="orderId"
+        @on-close-check-dialog="hideShowCheckDialog"></check-order>
     </div>
 </template>
 
@@ -255,16 +280,26 @@
 import VSelection from '../../components/base/selection'
 import VCounter from '../../components/base/counter'
 import VMulChooser from '../../components/base/multiplyChooser'
+import myDialog from '../../components/base/dialog'
+import bankChooser from '../../components/bankChooser'
+import checkOrder from '../../components/checkOrder'
 export default {
     components: {
         VSelection,
         VCounter,
-        VMulChooser
+        VMulChooser,
+        myDialog,
+        bankChooser,
+        checkOrder
     },
     data() {
         return {
+            isShowCheckDialog: false,
+            orderId: null,
+            bankId: null,
+            isShowPayDialog: false,
             price: 0,
-            buyNum: 0,
+            buyNum: 20,
             tradeVersion: {},
             version: [],
             tradeList: [
@@ -309,30 +344,64 @@ export default {
             ]
         }
     },
+    computed: {
+        versionLabels () {
+            let versionLabels =  this.version.map((item) => {
+                return item.label
+            })
+            return versionLabels.join(',')
+        },
+        versionValues () {
+            let versionValues = this.version.map((item) => {
+                return item.value
+            })
+            return versionValues.join(',')
+        }
+    },
     methods: {
+        hideShowCheckDialog () {
+            this.isShowCheckDialog=false
+        },
+        confirmBy () {
+            let reqParams = {
+                buyNum: this.buyNum,
+                tradeVersion: this.tradeVersion.value,
+                version: this.versionValues,
+                bankId: this.bankID
+            }
+            this.axios.post('/api/createOrder', reqParams)
+                .then((res) => {
+                    this.orderId = res.data.orderId
+                    this.isShowPayDialog = false
+                    this.isShowCheckDialog = true
+                })
+                .catch((err) => {
+                    console.log(err)
+                })
+        },
+        getBankId (bankObj) {
+            this.bankId = bankObj.id
+        },
         onParChange(attr, val) {
             this[attr] = val
             this.getPrice()
         },
-        getPrice () {
-            var versionSelValue = this.version.map((val, ind) => {
-                return this.version[ind].value
-            })
+        getPrice() {
             let reqParams = {
                 buyNum: this.buyNum,
                 tradeVersion: this.tradeVersion.value,
-                version: versionSelValue.join(',')
+                version: this.versionValues
             }
-            this.axios.post('/api/getPrice',reqParams)
-            .then((res) => {
-                this.price = res.data.amount
-            })
-            .catch((err) => {
-                console.log(err)
-            })
+            this.axios.post('/api/getPrice', reqParams)
+                .then((res) => {
+                    this.price = res.data.amount
+                })
+                .catch((err) => {
+                    console.log(err)
+                })
         }
     },
-    mounted () {
+    mounted() {
         this.tradeVersion = this.tradeList[0]
         this.version = [this.versionList[0]]
         this.getPrice()
@@ -341,6 +410,31 @@ export default {
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
-<style>
+<style scoped>
+.buy-dialog-title {
+    font-size: 16px;
+    font-weight: bold;
+}
 
+.buy-dialog-btn {
+    margin-top: 20px;
+}
+
+.buy-dialog-table {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.buy-dialog-table td,
+.buy-dialog-table th {
+    border: 1px solid #e3e3e3;
+    text-align: center;
+    padding: 5px 0;
+}
+
+.buy-dialog-table th {
+    background: #4fc08d;
+    color: #fff;
+    border: 1px solid #4fc08d;
+}
 </style>

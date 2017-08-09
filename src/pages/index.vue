@@ -50,7 +50,7 @@ export default {
         slideShow
     },
     created: function () {
-        this.axios.get('api/getNewsList')
+        this.axios.get('/api/getNewsList')
             .then((response) => {
                 this.newsList = response.data
             })
